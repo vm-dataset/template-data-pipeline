@@ -2,7 +2,7 @@
 Download and convert datasets to standardized format.
 
 Example usage:
-    python scripts/process_dataset.py --dataset videothinkbench --limit 10
+    python scripts/process_dataset.py
 """
 
 import argparse
