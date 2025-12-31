@@ -1,35 +1,19 @@
 # Template Data Pipeline
 
-**Simple scripts to download benchmark datasets and convert them to VMEvalKit format.**
+**Simple scripts to download benchmark datasets and convert them to standardized format.**
 
 ---
 
 ## Output Format
 
-All scripts produce this standardized format compatible with VMEvalKit:
+All scripts produce this standardized format:
 
 ```
 data/questions/{domain}_task/{task_id}/
 ├── first_frame.png          # Initial state image (required)
-├── final_frame.png          # Goal state image (required if no goal.txt)
-├── goal.txt                 # Goal state text (required if no final_frame.png)
+├── final_frame.png          # Final state image (required)
 ├── prompt.txt               # Natural language instruction (required)
-└── question_metadata.json   # Task metadata (required)
-```
-
-### Metadata Format
-
-```json
-{
-  "domain": "videothinkbench",
-  "task_id": "vtb_test_00000",
-  "difficulty": "medium",
-  "source": "video-think-bench/VideoThinkBench",
-  "split": "test",
-  "extra": {
-    "task_type": "spatial_reasoning"
-  }
-}
+└── ground_truth.avi         # Ground truth video (optional)
 ```
 
 ---
@@ -126,10 +110,10 @@ Image utilities for handling various image formats.
 
 ### `utils/validator.py`
 
-Data validator for checking consistency with VMEvalKit format.
+Data validator for checking consistency with the standardized format.
 
 **Functions:**
-- `validate_task_data(first_frame, prompt, final_frame, goal_text, metadata)` - Validate data structure
+- `validate_task_data(first_frame, prompt, final_frame)` - Validate data structure
 - `validate_task_directory(task_dir)` - Validate directory structure
 
 ### `utils/upload_to_s3.py`
@@ -189,31 +173,21 @@ def process_my_sample(item: dict, idx: int, split: str, output_dir: Path) -> boo
     
     # Extract images
     first_frame = convert_to_pil_image(item["initial_image"])
-    final_frame = convert_to_pil_image(item.get("target_image"))
+    final_frame = convert_to_pil_image(item["target_image"])
     
     # Extract text
     prompt = item["instruction"]
-    goal_text = item.get("answer")
     
-    # Create metadata
-    metadata = {
-        "domain": "mydataset",
-        "task_id": f"my_{split}_{idx:05d}",
-        "source": "org/dataset-name",
-        "split": split,
-    }
+    # Create task ID
+    task_id = f"my_{split}_{idx:05d}"
     
     # Save to disk
-    task_dir = output_dir / f"mydataset_task" / metadata["task_id"]
+    task_dir = output_dir / f"mydataset_task" / task_id
     task_dir.mkdir(parents=True, exist_ok=True)
     
     first_frame.save(task_dir / "first_frame.png")
-    if final_frame:
-        final_frame.save(task_dir / "final_frame.png")
-    if goal_text:
-        (task_dir / "goal.txt").write_text(goal_text)
+    final_frame.save(task_dir / "final_frame.png")
     (task_dir / "prompt.txt").write_text(prompt)
-    (task_dir / "question_metadata.json").write_text(json.dumps(metadata, indent=2))
     
     return True
 ```
@@ -283,7 +257,7 @@ python scripts/download_dataset.py --dataset mydataset --limit 5
    # Count files
    find data/questions -name "first_frame.png" | wc -l
    find data/questions -name "prompt.txt" | wc -l
-   find data/questions -name "question_metadata.json" | wc -l
+   find data/questions -name "final_frame.png" | wc -l
    ```
 
 2. **Validate Images:**
@@ -296,15 +270,14 @@ python scripts/download_dataset.py --dataset mydataset --limit 5
        print(f"{img_path}: {img.size} {img.mode}")
    ```
 
-3. **Validate Metadata:**
+3. **Validate Prompts:**
    ```python
-   import json
    from pathlib import Path
    
-   for meta_path in Path("data/questions").rglob("question_metadata.json"):
-       with open(meta_path) as f:
-           metadata = json.load(f)
-           print(f"{meta_path}: {metadata['task_id']}")
+   for prompt_path in Path("data/questions").rglob("prompt.txt"):
+       with open(prompt_path) as f:
+           prompt = f.read()
+           print(f"{prompt_path}: {prompt[:50]}...")
    ```
 
 ### S3 Upload
@@ -363,16 +336,16 @@ template-data-pipeline/
 │   └── download_dataset.py      # Dataset-specific processing scripts
 ├── utils/
 │   ├── images.py                # Image utilities
-│   ├── validator.py             # Data validator (VMEvalKit format)
+│   ├── validator.py             # Data validator (standardized format)
 │   └── upload_to_s3.py          # S3 uploader/downloader
 ├── data/
 │   └── questions/               # Output directory (created)
 │       └── {domain}_task/
 │           └── {task_id}/
 │               ├── first_frame.png
-│               ├── final_frame.png or goal.txt
+│               ├── final_frame.png
 │               ├── prompt.txt
-│               └── question_metadata.json
+│               └── ground_truth.avi (optional)
 ├── requirements.txt             # Python dependencies
 ├── README.md                    # This file
 └── .gitignore
@@ -457,13 +430,13 @@ if image is None:
 
 ### Data Validation Issues
 
-Check if data matches VMEvalKit format:
+Check if data matches the standardized format:
 
 ```python
 from utils.validator import validate_task_data, validate_task_directory
 
 # Validate data structure
-is_valid = validate_task_data(first_frame, prompt, final_frame, goal_text, metadata)
+is_valid = validate_task_data(first_frame, prompt, final_frame)
 if not is_valid:
     print("Data validation failed - missing required fields")
 
@@ -501,11 +474,10 @@ This is a template repository. To adapt for your needs:
 1. Fork the repository
 2. Add your dataset download functions to `scripts/download_dataset.py`
 3. Update this README with your dataset-specific instructions
-4. Maintain the standard output format for VMEvalKit compatibility
+4. Maintain the standard output format for compatibility
 
 ---
 
 ## Related Projects
 
-- **VMEvalKit** - Framework for evaluating video models
 - **template-data-generator** - Generate synthetic reasoning tasks

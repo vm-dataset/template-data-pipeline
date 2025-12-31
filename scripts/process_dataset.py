@@ -1,5 +1,5 @@
 """
-Download and convert datasets to VMEvalKit format.
+Download and convert datasets to standardized format.
 
 Example usage:
     python scripts/process_dataset.py --dataset videothinkbench --limit 10
@@ -59,52 +59,33 @@ def process_sample(item: dict, idx: int, split: str, output_dir: Path) -> bool:
     prompt = item.get("question") or item.get("prompt") or "Solve this visual reasoning task."
     prompt = str(prompt).strip()
     
-    # Extract goal (image or text)
+    # Extract final frame (required)
     final_frame = convert_to_pil_image(item.get("target_image"))
-    goal_text = item.get("answer") or item.get("target_text")
+    if not final_frame:
+        print(f"Warning: Invalid final frame at index {idx}")
+        return False
     
-    # Create metadata
-    domain = item.get("task_type") or item.get("category") or "videothinkbench"
-    task_id = f"vtb_{split}_{idx:05d}"
-    
-    metadata = {
-        "domain": domain,
-        "task_id": task_id,
-        "difficulty": item.get("difficulty"),
-        "source": "video-think-bench/VideoThinkBench",
-        "split": split,
-        "extra": {
-            k: v for k, v in item.items()
-            if k not in ["image", "target_image", "question", "answer", "prompt"]
-            and not isinstance(v, (Image.Image, bytes))
-        }
-    }
-    
-    # Validate data matches VMEvalKit format
-    if not validate_task_data(first_frame, prompt, final_frame, goal_text, metadata):
+    # Validate data matches standardized format
+    if not validate_task_data(first_frame, prompt, final_frame):
         print(f"Warning: Data validation failed at index {idx}")
         return False
     
     # Create task directory
+    domain = item.get("task_type") or item.get("category") or "videothinkbench"
+    task_id = f"vtb_{split}_{idx:05d}"
     task_dir = output_dir / f"{domain}_task" / task_id
     task_dir.mkdir(parents=True, exist_ok=True)
     
     # Write files
     first_frame.save(task_dir / "first_frame.png")
-    
-    if final_frame:
-        final_frame.save(task_dir / "final_frame.png")
-    elif goal_text:
-        (task_dir / "goal.txt").write_text(str(goal_text).strip())
-    
+    final_frame.save(task_dir / "final_frame.png")
     (task_dir / "prompt.txt").write_text(prompt)
-    (task_dir / "question_metadata.json").write_text(json.dumps(metadata, indent=2))
     
     return True
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Download datasets and convert to VMEvalKit format")
+    parser = argparse.ArgumentParser(description="Download datasets and convert to standardized format")
     parser.add_argument("--dataset", type=str, default="videothinkbench", help="Dataset name")
     parser.add_argument("--split", type=str, default="test", help="Dataset split")
     parser.add_argument("--output", type=Path, default=Path("data/questions"), help="Output directory")

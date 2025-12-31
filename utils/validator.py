@@ -1,15 +1,15 @@
 """
-Validator utilities for checking data consistency with VMEvalKit format.
+Validator utilities for checking data consistency with standardized format.
 
-VMEvalKit format:
+Standardized format:
     data/questions/{domain}_task/{task_id}/
     ├── first_frame.png          (required)
-    ├── final_frame.png or goal.txt (one required)
+    ├── final_frame.png          (required)
     ├── prompt.txt               (required)
-    └── question_metadata.json   (required)
+    └── ground_truth.avi         (optional)
 
 Functions:
-- validate_task_data() - Validate data matches VMEvalKit format
+- validate_task_data() - Validate data matches standardized format
 - validate_task_directory() - Validate directory structure
 """
 
@@ -21,17 +21,15 @@ from PIL import Image
 def validate_task_data(
     first_frame: Image.Image,
     prompt: str,
-    final_frame: Image.Image = None,
-    goal_text: str = None,
+    final_frame: Image.Image,
     metadata: Dict[str, Any] = None,
 ) -> bool:
-    """Validate task data matches VMEvalKit format.
+    """Validate task data matches standardized format.
     
     Args:
         first_frame: Initial state image (required)
         prompt: Natural language instruction (required)
-        final_frame: Goal state image (optional if goal_text provided)
-        goal_text: Goal state text (optional if final_frame provided)
+        final_frame: Final state image (required)
         metadata: Task metadata dict (required)
         
     Returns:
@@ -44,8 +42,8 @@ def validate_task_data(
     if not prompt or not prompt.strip():
         return False
     
-    # Must have either final_frame OR goal_text
-    if final_frame is None and not goal_text:
+    # final_frame is now required
+    if final_frame is None:
         return False
     
     # Check metadata has required fields
@@ -61,7 +59,7 @@ def validate_task_data(
 
 
 def validate_task_directory(task_dir: Path) -> bool:
-    """Validate task directory structure matches VMEvalKit format.
+    """Validate task directory structure matches standardized format.
     
     Args:
         task_dir: Path to task directory
@@ -74,23 +72,16 @@ def validate_task_directory(task_dir: Path) -> bool:
     
     # Check required files
     first_frame = task_dir / "first_frame.png"
+    final_frame = task_dir / "final_frame.png"
     prompt_file = task_dir / "prompt.txt"
-    metadata_file = task_dir / "question_metadata.json"
     
     if not first_frame.exists():
         return False
     
+    if not final_frame.exists():
+        return False
+    
     if not prompt_file.exists():
-        return False
-    
-    if not metadata_file.exists():
-        return False
-    
-    # Check for goal (either final_frame.png or goal.txt)
-    final_frame = task_dir / "final_frame.png"
-    goal_txt = task_dir / "goal.txt"
-    
-    if not final_frame.exists() and not goal_txt.exists():
         return False
     
     return True
