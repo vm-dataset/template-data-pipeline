@@ -9,7 +9,7 @@ Download datasets from HuggingFace and convert to standardized format.
 pip install -r requirements.txt
 
 # Get dataset → outputs to data/questions/
-python scripts/process_dataset.py --dataset videothinkbench --split test --limit 10
+python scripts/process_dataset.py
 
 # Upload to S3
 python utils/upload_to_s3.py --action upload --input data/questions --bucket BUCKET
