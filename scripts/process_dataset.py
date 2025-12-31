@@ -2,7 +2,7 @@
 Download and convert datasets to VMEvalKit format.
 
 Example usage:
-    python scripts/download_dataset.py --dataset videothinkbench --limit 10
+    python scripts/process_dataset.py --dataset videothinkbench --limit 10
 """
 
 import argparse
