@@ -6,7 +6,7 @@ Standardized format:
     ├── first_frame.png          (required)
     ├── final_frame.png          (required)
     ├── prompt.txt               (required)
-    └── ground_truth.avi         (optional)
+    └── ground_truth.mp4         (optional)
 
 Functions:
 - validate_task_data() - Validate data matches standardized format

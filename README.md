@@ -22,7 +22,7 @@ data/questions/{domain}_task/{task_id}/
 ├── first_frame.png
 ├── final_frame.png
 ├── prompt.txt
-└── ground_truth.avi (optional)
+└── ground_truth.mp4 (optional)
 ```
 
 ## AWS Setup
