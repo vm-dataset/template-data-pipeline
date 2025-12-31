@@ -32,11 +32,3 @@ export AWS_ACCESS_KEY_ID="key"
 export AWS_SECRET_ACCESS_KEY="secret"
 export AWS_DEFAULT_REGION="us-east-1"
 ```
-
-## Dependencies
-
-- `numpy==1.26.4`
-- `Pillow==10.3.0`
-- `datasets==2.19.0`
-- `huggingface-hub==0.23.0`
-- `boto3==1.34.110`
